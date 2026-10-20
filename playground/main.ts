@@ -156,3 +156,6 @@ function loadFromHash() {
 
 window.addEventListener('hashchange', loadFromHash);
 loadFromHash();
+
+// ?autorun runs the example straight away, handy for shared links
+if (new URLSearchParams(location.search).has('autorun')) run();
