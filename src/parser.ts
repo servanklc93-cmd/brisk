@@ -322,6 +322,8 @@ export class Parser {
       case T.Nil: return { kind: 'nil', line };
       case T.This: return { kind: 'this', line };
       case T.Ident: return { kind: 'var', name: token.text, line };
+      // already reported by the lexer
+      case T.Error: return { kind: 'nil', line };
 
       case T.Super: {
         this.expect(T.Dot, "Expected '.' after 'super'");

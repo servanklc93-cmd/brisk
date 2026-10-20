@@ -7,6 +7,9 @@ export enum T {
   Ident, Number, String,
   // "abc ${" — the start (or middle) of an interpolated string
   StringHead,
+  // left where the lexer already reported a problem, so the parser
+  // doesn't pile a second error on top of it
+  Error,
   And, Or, Class, Else, False, Fn, For, If, In, Let, Nil, Return, Super, This, True, While, Break, Continue,
   EOF,
 }
@@ -93,6 +96,7 @@ export function tokenize(src: string): { tokens: Token[]; errors: Diagnostic[] }
     }
     if (i >= src.length) {
       error('Unterminated string', l, c);
+      push(T.Error, out, l, c);
       return;
     }
     advance();
@@ -182,6 +186,7 @@ export function tokenize(src: string): { tokens: Token[]; errors: Diagnostic[] }
       case '>': two('=', T.GtEq, T.Gt); break;
       default:
         error(`Unexpected character '${ch}'`, l, c);
+        push(T.Error, ch, l, c);
     }
   }
 
