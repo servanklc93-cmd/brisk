@@ -52,3 +52,16 @@ print(Child(7).v)
 // expect: 7
 print(Dog)
 // expect: <class Dog>
+
+// fields can hold any callable: a class, a native or a bound method
+class Holder {}
+let h = Holder()
+h.make = Box
+h.say = print
+h.bound = d.speak
+print(type(h.make()))
+// expect: Box
+h.say("via a field")
+// expect: via a field
+print(h.bound())
+// expect: Rex barks

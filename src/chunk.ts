@@ -9,9 +9,9 @@ export enum Op {
   Dup2,
   GetLocal,       // u8 slot
   SetLocal,       // u8 slot
-  GetGlobal,      // u16 name
-  SetGlobal,      // u16 name
-  DefineGlobal,   // u16 name
+  GetGlobal,      // u16 global slot
+  SetGlobal,      // u16 global slot
+  DefineGlobal,   // u16 global slot
   GetUpvalue,     // u8 index
   SetUpvalue,     // u8 index
   CloseUpvalue,
@@ -42,6 +42,18 @@ export enum Op {
   BuildString,    // u8 part count
   Iter,
   ForNext,        // u8 iterator slot, u16 exit offset
+
+  // superinstructions: fused versions of common sequences
+  JumpIfNotLt,    // u16; pops both operands. `if a < b` in one dispatch
+  JumpIfNotLe,
+  JumpIfNotGt,
+  JumpIfNotGe,
+  JumpIfNotEq,
+  JumpIfNotNeq,
+  AddLocal,       // u8 slot; `x += <value>` as a statement, pops the value
+  SubLocal,       // u8 slot
+  AddGlobal,      // u16 global slot
+  SubGlobal,      // u16 global slot
 }
 
 export class Chunk {
@@ -65,14 +77,15 @@ export class Chunk {
   }
 }
 
-const U8 = new Set([Op.GetLocal, Op.SetLocal, Op.GetUpvalue, Op.SetUpvalue, Op.Call, Op.BuildString]);
-const U16_CONST = new Set([
-  Op.Const, Op.GetGlobal, Op.SetGlobal, Op.DefineGlobal, Op.GetProp, Op.SetProp,
-  Op.GetSuper, Op.Class, Op.Method,
+const U8 = new Set([Op.GetLocal, Op.SetLocal, Op.GetUpvalue, Op.SetUpvalue, Op.Call, Op.BuildString, Op.AddLocal, Op.SubLocal]);
+const U16_CONST = new Set([Op.Const, Op.GetProp, Op.SetProp, Op.GetSuper, Op.Class, Op.Method]);
+const GLOBALS = new Set([Op.GetGlobal, Op.SetGlobal, Op.DefineGlobal, Op.AddGlobal, Op.SubGlobal]);
+const JUMPS = new Set([
+  Op.Jump, Op.JumpIfFalse, Op.JumpIfTrue, Op.PopJumpIfFalse,
+  Op.JumpIfNotLt, Op.JumpIfNotLe, Op.JumpIfNotGt, Op.JumpIfNotGe, Op.JumpIfNotEq, Op.JumpIfNotNeq,
 ]);
-const JUMPS = new Set([Op.Jump, Op.JumpIfFalse, Op.JumpIfTrue, Op.PopJumpIfFalse]);
 
-export function disassemble(proto: FnProto, out: string[] = []): string[] {
+export function disassemble(proto: FnProto, globals: readonly string[] = [], out: string[] = []): string[] {
   const { chunk } = proto;
   const code = chunk.code;
   const nested: FnProto[] = [];
@@ -98,6 +111,9 @@ export function disassemble(proto: FnProto, out: string[] = []): string[] {
     } else if (U16_CONST.has(op)) {
       const idx = u16();
       args = `${idx} ${format(chunk.constants[idx], true)}`;
+    } else if (GLOBALS.has(op)) {
+      const slot = u16();
+      args = `${slot} ${globals[slot] ?? '?'}`;
     } else if (JUMPS.has(op)) {
       const off = u16();
       args = `-> ${String(ip + off).padStart(4, '0')}`;
@@ -129,7 +145,7 @@ export function disassemble(proto: FnProto, out: string[] = []): string[] {
 
   for (const fn of nested) {
     out.push('');
-    disassemble(fn, out);
+    disassemble(fn, globals, out);
   }
   return out;
 }

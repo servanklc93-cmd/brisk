@@ -1,5 +1,6 @@
 import { type CompileOptions, compile } from './compiler';
 import { disassemble } from './chunk';
+import { Globals } from './globals';
 import { type Diagnostic, tokenize } from './lexer';
 import { PRELUDE, natives } from './natives';
 import { parse } from './parser';
@@ -16,13 +17,13 @@ export class CompileError extends Error {
   }
 }
 
-export function compileSource(source: string, options?: CompileOptions): FnProto {
+export function compileSource(source: string, globals = new Globals(), options?: CompileOptions): FnProto {
   const { tokens, errors: lexErrors } = tokenize(source);
   const { program, errors: parseErrors } = parse(tokens);
   const errors = [...lexErrors, ...parseErrors];
   if (errors.length) throw new CompileError(sortDiagnostics(errors));
 
-  const { proto, errors: compileErrors } = compile(program, options);
+  const { proto, errors: compileErrors } = compile(program, globals, options);
   if (compileErrors.length) throw new CompileError(sortDiagnostics(compileErrors));
   return proto;
 }
@@ -32,7 +33,8 @@ function sortDiagnostics(list: Diagnostic[]) {
 }
 
 export function disassembleSource(source: string): string {
-  return disassemble(compileSource(source)).join('\n');
+  const globals = new Globals();
+  return disassemble(compileSource(source, globals), globals.names).join('\n');
 }
 
 export interface BriskOptions {
@@ -46,11 +48,11 @@ export class Brisk {
 
   constructor({ print = console.log, prelude = true }: BriskOptions = {}) {
     for (const fn of natives({ print })) this.vm.globals.set(fn.name, fn);
-    if (prelude) this.vm.run(compileSource(PRELUDE));
+    if (prelude) this.vm.run(compileSource(PRELUDE, this.vm.globals));
   }
 
   run(source: string, options?: CompileOptions): Value {
-    return this.vm.run(compileSource(source, options));
+    return this.vm.run(compileSource(source, this.vm.globals, options));
   }
 }
 

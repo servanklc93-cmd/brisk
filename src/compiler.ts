@@ -1,5 +1,6 @@
 import type { AssignOp, BinaryOp, Expr, FnNode, Stmt } from './ast';
 import { Chunk, Op } from './chunk';
+import { Globals } from './globals';
 import type { Diagnostic } from './lexer';
 import { FnProto, type FnKind, type Value } from './value';
 
@@ -49,6 +50,11 @@ const BINARY_OPS: Record<Exclude<BinaryOp, '..'>, Op> = {
   '==': Op.Eq, '!=': Op.Neq, '<': Op.Lt, '<=': Op.Le, '>': Op.Gt, '>=': Op.Ge,
 };
 
+const FUSED_JUMPS: Partial<Record<BinaryOp, Op>> = {
+  '<': Op.JumpIfNotLt, '<=': Op.JumpIfNotLe, '>': Op.JumpIfNotGt, '>=': Op.JumpIfNotGe,
+  '==': Op.JumpIfNotEq, '!=': Op.JumpIfNotNeq,
+};
+
 const COMPOUND: Record<Exclude<AssignOp, '='>, Op> = {
   '+=': Op.Add, '-=': Op.Sub, '*=': Op.Mul, '/=': Op.Div,
 };
@@ -63,6 +69,8 @@ export class Compiler {
   private fn!: FnState;
   private klass: ClassState | null = null;
   private line = 1;
+
+  constructor(private readonly globals: Globals) {}
 
   compile(program: Stmt[], options: CompileOptions = {}): FnProto {
     const proto = new FnProto('<script>', 0, new Chunk(), 'script');
@@ -173,7 +181,7 @@ export class Compiler {
 
   // the value to bind is on top of the stack
   private define(name: string) {
-    if (this.isGlobalScope()) this.emitU16(Op.DefineGlobal, this.constant(name));
+    if (this.isGlobalScope()) this.emitU16(Op.DefineGlobal, this.globals.slot(name));
     else this.addLocal(name);
   }
 
@@ -209,7 +217,7 @@ export class Compiler {
     if (slot !== -1) return this.emit(Op.GetLocal, slot);
     slot = this.resolveUpvalue(this.fn, name);
     if (slot !== -1) return this.emit(Op.GetUpvalue, slot);
-    this.emitU16(Op.GetGlobal, this.constant(name));
+    this.emitU16(Op.GetGlobal, this.globals.slot(name));
   }
 
   private setVar(name: string) {
@@ -217,7 +225,7 @@ export class Compiler {
     if (slot !== -1) return this.emit(Op.SetLocal, slot);
     slot = this.resolveUpvalue(this.fn, name);
     if (slot !== -1) return this.emit(Op.SetUpvalue, slot);
-    this.emitU16(Op.SetGlobal, this.constant(name));
+    this.emitU16(Op.SetGlobal, this.globals.slot(name));
   }
 
   // --- statements -----------------------------------------------------------
@@ -231,10 +239,26 @@ export class Compiler {
   private stmt(s: Stmt) {
     this.line = s.line;
     switch (s.kind) {
-      case 'expr':
-        this.expr(s.expr);
+      case 'expr': {
+        const e = s.expr;
+        // `x += v` / `x -= v` as a statement: the result is thrown away, so
+        // update the variable in place instead of get / op / set / pop
+        if (e.kind === 'assign' && (e.op === '+=' || e.op === '-=') && e.target.kind === 'var') {
+          const add = e.op === '+=';
+          const name = e.target.name;
+          const local = this.resolveLocal(this.fn, name);
+          if (local !== -1 || this.resolveUpvalue(this.fn, name) === -1) {
+            this.expr(e.value);
+            this.line = s.line;
+            if (local !== -1) this.emit(add ? Op.AddLocal : Op.SubLocal, local);
+            else this.emitU16(add ? Op.AddGlobal : Op.SubGlobal, this.globals.slot(name));
+            break;
+          }
+        }
+        this.expr(e);
         this.emit(Op.Pop);
         break;
+      }
 
       case 'let':
         // the initializer is compiled before the name exists, so
@@ -248,7 +272,7 @@ export class Compiler {
       case 'fndecl':
         if (this.isGlobalScope()) {
           this.function(s.fn, 'function');
-          this.emitU16(Op.DefineGlobal, this.constant(s.fn.name));
+          this.emitU16(Op.DefineGlobal, this.globals.slot(s.fn.name));
         } else {
           // declare first so the function can call itself
           this.addLocal(s.fn.name);
@@ -261,8 +285,7 @@ export class Compiler {
         break;
 
       case 'if': {
-        this.expr(s.cond);
-        const toElse = this.emitJump(Op.PopJumpIfFalse);
+        const toElse = this.conditionJump(s.cond);
         this.block(s.then);
         if (s.else) {
           const toEnd = this.emitJump(Op.Jump);
@@ -280,10 +303,7 @@ export class Compiler {
         // `while true` needs no condition check at all
         const forever = s.cond.kind === 'bool' && s.cond.value;
         let exit = -1;
-        if (!forever) {
-          this.expr(s.cond);
-          exit = this.emitJump(Op.PopJumpIfFalse);
-        }
+        if (!forever) exit = this.conditionJump(s.cond);
         const loop: Loop = { start, depth: this.fn.depth, breaks: [] };
         this.fn.loops.push(loop);
         this.block(s.body);
@@ -325,6 +345,19 @@ export class Compiler {
         this.classDecl(s);
         break;
     }
+  }
+
+  // compiles a condition and a jump taken when it's false. comparisons fuse
+  // into one instruction, everything else is expr + PopJumpIfFalse.
+  private conditionJump(cond: Expr): number {
+    if (cond.kind === 'binary' && FUSED_JUMPS[cond.op] !== undefined && fold(cond) === undefined) {
+      this.expr(cond.left);
+      this.expr(cond.right);
+      this.line = cond.line;
+      return this.emitJump(FUSED_JUMPS[cond.op]!);
+    }
+    this.expr(cond);
+    return this.emitJump(Op.PopJumpIfFalse);
   }
 
   // for x in xs { body }
@@ -648,8 +681,8 @@ function fold(e: Expr): number | string | undefined {
   }
 }
 
-export function compile(program: Stmt[], options?: CompileOptions) {
-  const compiler = new Compiler();
+export function compile(program: Stmt[], globals: Globals, options?: CompileOptions) {
+  const compiler = new Compiler(globals);
   const proto = compiler.compile(program, options);
   return { proto, errors: compiler.errors };
 }
