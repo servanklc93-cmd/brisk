@@ -1,0 +1,23 @@
+{
+  "name": "brisk",
+  "version": "0.1.0",
+  "description": "A small dynamically typed language with a bytecode compiler and a stack VM",
+  "type": "module",
+  "private": true,
+  "bin": {
+    "brisk": "dist/brisk.js"
+  },
+  "scripts": {
+    "build": "node build.mjs",
+    "test": "vitest run",
+    "typecheck": "tsc --noEmit",
+    "bench": "npm run build && node bench/run.mjs"
+  },
+  "license": "MIT",
+  "devDependencies": {
+    "@types/node": "^22.20.5",
+    "esbuild": "^0.25.12",
+    "typescript": "^5.9.3",
+    "vitest": "^3.2.7"
+  }
+}
