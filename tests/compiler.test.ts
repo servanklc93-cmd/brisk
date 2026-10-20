@@ -13,6 +13,12 @@ describe('compiler', () => {
     expect(disassembleSource('let x = 1 / 0')).toContain('Div');
   });
 
+  it('drops the condition check from while true', () => {
+    const asm = disassembleSource('while true { break }');
+    expect(asm).not.toContain('True');
+    expect(asm).not.toContain('PopJumpIfFalse');
+  });
+
   it('uses Invoke for method calls', () => {
     const asm = disassembleSource('let xs = []\nxs.push(1)');
     expect(asm).toContain('Invoke         "push" (1 args)');

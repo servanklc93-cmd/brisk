@@ -277,14 +277,19 @@ export class Compiler {
 
       case 'while': {
         const start = this.chunk.code.length;
-        this.expr(s.cond);
-        const exit = this.emitJump(Op.PopJumpIfFalse);
+        // `while true` needs no condition check at all
+        const forever = s.cond.kind === 'bool' && s.cond.value;
+        let exit = -1;
+        if (!forever) {
+          this.expr(s.cond);
+          exit = this.emitJump(Op.PopJumpIfFalse);
+        }
         const loop: Loop = { start, depth: this.fn.depth, breaks: [] };
         this.fn.loops.push(loop);
         this.block(s.body);
         this.emitLoop(start);
         this.fn.loops.pop();
-        this.patchJump(exit);
+        if (exit !== -1) this.patchJump(exit);
         loop.breaks.forEach((b) => this.patchJump(b));
         break;
       }
