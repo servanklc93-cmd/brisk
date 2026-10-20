@@ -1,0 +1,49 @@
+// the fused instructions must behave exactly like the long form
+
+// += on strings and lists, for locals and globals
+let g = "a"
+g += "b"
+let gl = [1]
+gl += [2]
+fn local() {
+  let s = "x"
+  s += "y"
+  let n = 10
+  n -= 3
+  return [s, n]
+}
+print(g, gl, local())
+// expect: ab [1, 2] ["xy", 7]
+
+// += on a captured variable still goes through the upvalue
+fn counter() {
+  let n = 0
+  return fn() {
+    n += 2
+    return n
+  }
+}
+let c = counter()
+c()
+print(c())
+// expect: 4
+
+// fused comparisons in if / while, including strings and equality
+let words = []
+let w = "a"
+while w < "aaaa" {
+  words.push(w)
+  w += "a"
+}
+print(words)
+// expect: ["a", "aa", "aaa"]
+if 2 >= 2 { print("ge") }
+if 1 != 1 { print("never") } else { print("neq ok") }
+if nil == nil { print("eq ok") }
+// expect: ge
+// expect: neq ok
+// expect: eq ok
+
+// constant conditions still fold
+if 1 < 2 { print("folded") }
+// expect: folded

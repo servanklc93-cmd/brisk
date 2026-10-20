@@ -1,0 +1,3 @@
+let s = "text"
+s -= 1
+// expect runtime error: Operands of '-' must be numbers, got string and number

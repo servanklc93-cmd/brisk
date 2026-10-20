@@ -1,0 +1,2 @@
+if 1 < "2" { print("no") }
+// expect runtime error: Can't compare number with string
