@@ -1,0 +1,43 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>brisk playground</title>
+  <meta name="description" content="A small language with a bytecode compiler and a stack VM, running in your browser.">
+  <link rel="stylesheet" href="style.css">
+</head>
+<body data-tab="output">
+  <header class="top">
+    <div class="brand">
+      <strong>brisk</strong>
+      <span class="tagline">bytecode compiler + stack VM, in TypeScript</span>
+    </div>
+    <div class="controls">
+      <select id="examples" aria-label="Example program"></select>
+      <button id="run" class="primary" title="Run (Ctrl/⌘ + Enter)">▶ Run</button>
+      <button id="stop" disabled>■ Stop</button>
+      <a class="repo" href="https://github.com/servanklc93-cmd/brisk">GitHub</a>
+    </div>
+  </header>
+
+  <main class="panes">
+    <section class="pane code">
+      <div id="gutter" class="gutter" aria-hidden="true"></div>
+      <textarea id="editor" spellcheck="false" autocapitalize="off" autocomplete="off" aria-label="Code"></textarea>
+    </section>
+
+    <section class="pane right">
+      <nav class="tabs">
+        <button data-tab="output">Output</button>
+        <button data-tab="bytecode">Bytecode</button>
+        <span id="status" class="status"></span>
+      </nav>
+      <pre id="output" class="view output-view"></pre>
+      <pre id="bytecode" class="view bytecode-view"></pre>
+    </section>
+  </main>
+
+  <script type="module" src="main.js"></script>
+</body>
+</html>
