@@ -1,0 +1,2 @@
+fn f() { break }
+// expect compile error: 'break' outside of a loop

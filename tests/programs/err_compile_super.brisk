@@ -1,0 +1,2 @@
+class A { m() { return super.m() } }
+// expect compile error: Can't use 'super' in a class with no superclass

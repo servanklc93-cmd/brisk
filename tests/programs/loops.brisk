@@ -1,0 +1,61 @@
+let total = 0
+for i in 1..11 { total += i }
+print(total)
+// expect: 55
+
+// ranges count down too
+let down = []
+for i in 3..0 { down.push(i) }
+print(down)
+// expect: [3, 2, 1]
+
+// break and continue, including from inside nested scopes
+let found = []
+for i in 0..100 {
+  if i % 2 == 0 { continue }
+  let sq = i * i
+  if sq > 50 { break }
+  found.push(sq)
+}
+print(found)
+// expect: [1, 9, 25, 49]
+
+let n = 0
+while true {
+  n += 1
+  if n < 5 { continue }
+  break
+}
+print(n)
+// expect: 5
+
+// nested loops: break only leaves the inner one
+let pairs = 0
+for i in 0..3 {
+  for j in 0..3 {
+    if j > i { break }
+    pairs += 1
+  }
+}
+print(pairs)
+// expect: 6
+
+// iterating maps gives keys in insertion order, strings give characters
+let ages = {"ann": 31, "bob": 25}
+for name in ages { print(name, ages[name]) }
+// expect: ann 31
+// expect: bob 25
+print(list("hey"))
+// expect: ["h", "e", "y"]
+
+// closures captured in a loop body that breaks still work
+let saved = nil
+for i in 0..10 {
+  let local = i * 10
+  if i == 4 {
+    saved = fn() { return local }
+    break
+  }
+}
+print(saved())
+// expect: 40

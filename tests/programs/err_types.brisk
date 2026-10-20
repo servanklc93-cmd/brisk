@@ -1,0 +1,2 @@
+print("x" + 1)
+// expect runtime error: Can't add string and number

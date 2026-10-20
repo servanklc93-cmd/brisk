@@ -1,0 +1,16 @@
+print(1 + 2 * 3, (1 + 2) * 3, 10 / 4, 10 % 3, -2 * -3)
+// expect: 7 9 2.5 1 6
+print(1 < 2 and 2 < 3, nil or "default", false and missing_is_never_read)
+// expect: true default false
+print(!nil, !0, !"", 0 == false, nil == nil)
+// expect: true false false false true
+let x = 5
+x += 2; x *= 3; x -= 1; x /= 4
+print(x)
+// expect: 5
+print(1_000_000 + 0.5, 0.1 + 0.2 == 0.3)
+// expect: 1000000.5 false
+print(type(1), type("s"), type(nil), type([]), type({}), type(print), type(0..1))
+// expect: number string nil list map function range
+print(str(42) + "!", num("3.5") + 1, num("nope"))
+// expect: 42! 4.5 nil

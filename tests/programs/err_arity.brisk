@@ -1,0 +1,3 @@
+fn add(a, b) { return a + b }
+add(1)
+// expect runtime error: add() takes 2 arguments but got 1

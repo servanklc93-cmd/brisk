@@ -1,0 +1,15 @@
+let name = "world"
+print("hello ${name}!")
+// expect: hello world!
+print("${1 + 2} and ${"nested ${name.upper()}"}")
+// expect: 3 and nested WORLD
+print("list: ${[1, "a"]}, map: ${ {"k": nil} }")
+// expect: list: [1, "a"], map: {"k": nil}
+print("a,b,c".split(","), "  pad ".trim(), "ab".repeat(3))
+// expect: ["a", "b", "c"] pad ababab
+print("hello"[1], "hello"[-1], len("héllo"))
+// expect: e o 5
+print("escapes: \"q\" \\ \$notinterp")
+// expect: escapes: "q" \ $notinterp
+print("abc" < "abd", "b" + "c" == "bc")
+// expect: true true

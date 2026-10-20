@@ -1,0 +1,5 @@
+fn helper() {
+  return missing + 1
+}
+helper()
+// expect runtime error: Undefined variable 'missing'

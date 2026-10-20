@@ -1,0 +1,54 @@
+class Animal {
+  init(name) { this.name = name }
+  speak() { return "${this.name} makes a sound" }
+  describe() { return "I am ${this.name}. " + this.speak() }
+}
+
+class Dog < Animal {
+  init(name, breed) {
+    super.init(name)
+    this.breed = breed
+  }
+  speak() { return "${this.name} barks" }
+}
+
+let d = Dog("Rex", "lab")
+print(d.speak())
+// expect: Rex barks
+print(d.describe())
+// expect: I am Rex. Rex barks
+print(d.breed, isInstance(d, Animal), isInstance(d, Dog))
+// expect: lab true true
+print(Animal("cat").describe())
+// expect: I am cat. cat makes a sound
+
+// methods are values, and they remember their receiver
+let speak = d.speak
+print(speak())
+// expect: Rex barks
+
+// fields can hold functions
+class Box {}
+let b = Box()
+b.double = fn(x) { return x * 2 }
+print(b.double(21))
+// expect: 42
+
+// init returns the instance even with a bare return
+class Early {
+  init(x) {
+    this.x = x
+    if x > 0 { return }
+    this.x = -1
+  }
+}
+print(Early(5).x, Early(0).x)
+// expect: 5 -1
+
+// inherited init
+class Base { init(v) { this.v = v } }
+class Child < Base {}
+print(Child(7).v)
+// expect: 7
+print(Dog)
+// expect: <class Dog>

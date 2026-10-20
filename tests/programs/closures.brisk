@@ -1,0 +1,43 @@
+// each iteration gets its own variable, like `let` in a JS for loop
+let fns = []
+for i in 0..3 {
+  fns.push(fn() { return i })
+}
+for f in fns { print(f()) }
+// expect: 0
+// expect: 1
+// expect: 2
+
+// two closures share one captured variable
+fn pair() {
+  let n = 0
+  let inc = fn() { n += 1 }
+  let get = fn() { return n }
+  return [inc, get]
+}
+let p = pair()
+p[0](); p[0](); p[0]()
+print(p[1]())
+// expect: 3
+
+// a variable captured after its scope closed
+fn outer() {
+  let x = "before"
+  let f = fn() { return x }
+  x = "after"
+  return f
+}
+print(outer()())
+// expect: after
+
+// capturing through several levels
+fn a() {
+  let v = 1
+  fn b() {
+    fn c() { return v + 1 }
+    return c
+  }
+  return b()
+}
+print(a()())
+// expect: 2

@@ -48,5 +48,7 @@ describe('lexer', () => {
     const { errors } = tokenize('let a = 1\nlet b = @');
     expect(errors).toEqual([{ message: "Unexpected character '@'", line: 2, col: 9 }]);
     expect(tokenize('"never closed').errors[0].message).toBe('Unterminated string');
+    // the bad character is replaced by an Error token, not dropped
+    expect(types('a @ b')).toEqual([T.Ident, T.Error, T.Ident, T.EOF]);
   });
 });
