@@ -1,0 +1,9 @@
+fn fib(n) {
+  if n < 2 { return n }
+  return fib(n - 1) + fib(n - 2)
+}
+
+let start = clock()
+let result = fib(27)
+let ms = round((clock() - start) * 1000)
+print("fib(27) = ${result} in ${ms}ms")

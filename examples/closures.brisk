@@ -1,0 +1,29 @@
+// functions are values and capture the variables around them
+fn makeCounter(step) {
+  let count = 0
+  return fn() {
+    count += step
+    return count
+  }
+}
+
+let byOne = makeCounter(1)
+let byTen = makeCounter(10)
+byOne(); byOne()
+byTen()
+print(byOne(), byTen())
+
+// each loop iteration gets a fresh variable
+let printers = []
+for word in ["a", "b", "c"] {
+  printers.push(fn() { return word })
+}
+print(map(printers, fn(f) { return f() }))
+
+// a tiny compose helper
+fn compose(f, g) {
+  return fn(x) { return f(g(x)) }
+}
+let inc = fn(x) { return x + 1 }
+let double = fn(x) { return x * 2 }
+print(compose(inc, double)(5), compose(double, inc)(5))

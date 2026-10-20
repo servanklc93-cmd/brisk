@@ -1,0 +1,8 @@
+// brisk: a small language with a bytecode compiler and a stack VM
+let name = "brisk"
+print("hello from ${name}!")
+
+let langs = ["python", "typescript", "swift"]
+for i in 0..len(langs) {
+  print("${i + 1}. ${langs[i].upper()}")
+}

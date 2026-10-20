@@ -1,0 +1,53 @@
+// Conway's game of life on a small wrapping grid
+let W = 20
+let H = 10
+
+fn blank() {
+  let rows = []
+  for y in 0..H {
+    let row = []
+    for x in 0..W { row.push(false) }
+    rows.push(row)
+  }
+  return rows
+}
+
+let grid = blank()
+// a glider and a blinker
+for p in [[1, 0], [2, 1], [0, 2], [1, 2], [2, 2], [12, 5], [13, 5], [14, 5]] {
+  grid[p[1]][p[0]] = true
+}
+
+fn neighbours(g, x, y) {
+  let n = 0
+  for dy in -1..2 {
+    for dx in -1..2 {
+      if dx == 0 and dy == 0 { continue }
+      if g[(y + dy + H) % H][(x + dx + W) % W] { n += 1 }
+    }
+  }
+  return n
+}
+
+fn step(g) {
+  let next = blank()
+  for y in 0..H {
+    for x in 0..W {
+      let n = neighbours(g, x, y)
+      next[y][x] = n == 3 or (g[y][x] and n == 2)
+    }
+  }
+  return next
+}
+
+fn show(g, gen) {
+  print("generation ${gen}")
+  for row in g {
+    print(map(row, fn(alive) { if alive { return "#" } return "." }).join(""))
+  }
+}
+
+for gen in 0..4 {
+  show(grid, gen)
+  grid = step(grid)
+}

@@ -1,0 +1,28 @@
+class Shape {
+  init(name) { this.name = name }
+  area() { return 0 }
+  describe() { return "${this.name} with area ${round(this.area() * 100) / 100}" }
+}
+
+class Circle < Shape {
+  init(r) {
+    super.init("circle")
+    this.r = r
+  }
+  area() { return 3.14159 * this.r * this.r }
+}
+
+class Rect < Shape {
+  init(w, h) {
+    super.init("rect")
+    this.w = w
+    this.h = h
+  }
+  area() { return this.w * this.h }
+}
+
+let shapes = [Circle(1), Rect(3, 4), Circle(2.5)]
+for s in shapes { print(s.describe()) }
+
+let total = sum(map(shapes, fn(s) { return s.area() }))
+print("total area: ${round(total)}")
