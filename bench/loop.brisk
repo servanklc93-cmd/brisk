@@ -1,0 +1,8 @@
+let t = clock()
+let total = 0
+let i = 0
+while i < 10_000_000 {
+  total += i
+  i += 1
+}
+print(clock() - t)

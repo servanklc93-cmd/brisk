@@ -1,0 +1,8 @@
+class Counter {
+  init() { this.n = 0 }
+  inc(by) { this.n = this.n + by }
+}
+let t = clock()
+let c = Counter()
+for i in 0..2_000_000 { c.inc(i) }
+print(clock() - t)

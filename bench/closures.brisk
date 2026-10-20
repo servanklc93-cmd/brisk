@@ -1,0 +1,8 @@
+fn adder(x) { return fn(y) { return x + y } }
+let t = clock()
+let total = 0
+for i in 0..1_000_000 {
+  let add = adder(i)
+  total = add(total) % 1000
+}
+print(clock() - t)
