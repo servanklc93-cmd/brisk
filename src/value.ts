@@ -93,6 +93,10 @@ export function typeName(v: Value): string {
   return 'object';
 }
 
+export class FormatDepthError extends Error {}
+
+const MAX_FORMAT_DEPTH = 500;
+
 export function format(v: Value, nested = false, seen = new Set<Value>()): string {
   if (v === null) return 'nil';
   if (typeof v === 'string') return nested ? JSON.stringify(v) : v;
@@ -101,6 +105,7 @@ export function format(v: Value, nested = false, seen = new Set<Value>()): strin
 
   if (v instanceof BriskList || v instanceof BriskMap) {
     if (seen.has(v)) return v instanceof BriskList ? '[...]' : '{...}';
+    if (seen.size >= MAX_FORMAT_DEPTH) throw new FormatDepthError(`Value is nested more than ${MAX_FORMAT_DEPTH} levels deep, can't print it`);
     seen.add(v);
     const out = v instanceof BriskList
       ? `[${v.items.map((x) => format(x, true, seen)).join(', ')}]`

@@ -175,13 +175,19 @@ export class Compiler {
     fn.locals.push({ name, depth: fn.depth, captured: false });
   }
 
+  private globalSlot(name: string): number {
+    const slot = this.globals.slot(name);
+    if (slot > 0xffff) this.error('Too many global variables');
+    return slot;
+  }
+
   private isGlobalScope(): boolean {
     return this.fn.enclosing === null && this.fn.depth === 0;
   }
 
   // the value to bind is on top of the stack
   private define(name: string) {
-    if (this.isGlobalScope()) this.emitU16(Op.DefineGlobal, this.globals.slot(name));
+    if (this.isGlobalScope()) this.emitU16(Op.DefineGlobal, this.globalSlot(name));
     else this.addLocal(name);
   }
 
@@ -217,7 +223,7 @@ export class Compiler {
     if (slot !== -1) return this.emit(Op.GetLocal, slot);
     slot = this.resolveUpvalue(this.fn, name);
     if (slot !== -1) return this.emit(Op.GetUpvalue, slot);
-    this.emitU16(Op.GetGlobal, this.globals.slot(name));
+    this.emitU16(Op.GetGlobal, this.globalSlot(name));
   }
 
   private setVar(name: string) {
@@ -225,7 +231,7 @@ export class Compiler {
     if (slot !== -1) return this.emit(Op.SetLocal, slot);
     slot = this.resolveUpvalue(this.fn, name);
     if (slot !== -1) return this.emit(Op.SetUpvalue, slot);
-    this.emitU16(Op.SetGlobal, this.globals.slot(name));
+    this.emitU16(Op.SetGlobal, this.globalSlot(name));
   }
 
   // --- statements -----------------------------------------------------------
@@ -251,7 +257,7 @@ export class Compiler {
             this.expr(e.value);
             this.line = s.line;
             if (local !== -1) this.emit(add ? Op.AddLocal : Op.SubLocal, local);
-            else this.emitU16(add ? Op.AddGlobal : Op.SubGlobal, this.globals.slot(name));
+            else this.emitU16(add ? Op.AddGlobal : Op.SubGlobal, this.globalSlot(name));
             break;
           }
         }
@@ -272,7 +278,7 @@ export class Compiler {
       case 'fndecl':
         if (this.isGlobalScope()) {
           this.function(s.fn, 'function');
-          this.emitU16(Op.DefineGlobal, this.globals.slot(s.fn.name));
+          this.emitU16(Op.DefineGlobal, this.globalSlot(s.fn.name));
         } else {
           // declare first so the function can call itself
           this.addLocal(s.fn.name);
@@ -546,6 +552,7 @@ export class Compiler {
         break;
 
       case 'list':
+        if (e.items.length > 0xffff) this.error('Too many items in list literal');
         for (const item of e.items) this.expr(item);
         this.line = e.line;
         this.emitU16(Op.List, e.items.length);

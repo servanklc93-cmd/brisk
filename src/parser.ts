@@ -3,6 +3,10 @@ import { type Diagnostic, T, type Token } from './lexer';
 
 class Abort extends Error {}
 
+// deeper than this and the recursive descent would blow the JS stack.
+// CPython has a similar limit (200 nested parentheses).
+const MAX_NESTING = 200;
+
 const ASSIGN_OPS: Partial<Record<T, AssignOp>> = {
   [T.Eq]: '=', [T.PlusEq]: '+=', [T.MinusEq]: '-=', [T.StarEq]: '*=', [T.SlashEq]: '/=',
 };
@@ -17,6 +21,7 @@ const BINARY_LEVELS: [T, BinaryOp][][] = [
 
 export class Parser {
   private pos = 0;
+  private nesting = 0;
   readonly errors: Diagnostic[] = [];
 
   constructor(private readonly tokens: Token[]) {}
@@ -266,6 +271,19 @@ export class Parser {
   }
 
   private unary(): Expr {
+    // every nested expression passes through here, so this is where depth is counted
+    if (++this.nesting > MAX_NESTING) {
+      this.nesting = 0;
+      throw this.error(this.peek(), `Expression is nested more than ${MAX_NESTING} levels deep`);
+    }
+    try {
+      return this.unaryInner();
+    } finally {
+      if (this.nesting > 0) this.nesting--;
+    }
+  }
+
+  private unaryInner(): Expr {
     if (this.match(T.Bang, T.Minus)) {
       const token = this.previous();
       const op = token.type === T.Bang ? '!' : '-';
@@ -305,7 +323,8 @@ export class Parser {
       } while (this.match(T.Comma));
     }
     this.expect(close, close === T.RParen ? 'Expected ) after arguments' : 'Expected ] after list');
-    if (args.length > 255) this.error(this.previous(), "Can't have more than 255 arguments");
+    // calls encode argc in one byte; list literals use two
+    if (close === T.RParen && args.length > 255) this.error(this.previous(), "Can't have more than 255 arguments");
     return args;
   }
 

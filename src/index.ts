@@ -18,14 +18,23 @@ export class CompileError extends Error {
 }
 
 export function compileSource(source: string, globals = new Globals(), options?: CompileOptions): FnProto {
-  const { tokens, errors: lexErrors } = tokenize(source);
-  const { program, errors: parseErrors } = parse(tokens);
-  const errors = [...lexErrors, ...parseErrors];
-  if (errors.length) throw new CompileError(sortDiagnostics(errors));
+  try {
+    const { tokens, errors: lexErrors } = tokenize(source);
+    const { program, errors: parseErrors } = parse(tokens);
+    const errors = [...lexErrors, ...parseErrors];
+    if (errors.length) throw new CompileError(sortDiagnostics(errors));
 
-  const { proto, errors: compileErrors } = compile(program, globals, options);
-  if (compileErrors.length) throw new CompileError(sortDiagnostics(compileErrors));
-  return proto;
+    const { proto, errors: compileErrors } = compile(program, globals, options);
+    if (compileErrors.length) throw new CompileError(sortDiagnostics(compileErrors));
+    return proto;
+  } catch (e) {
+    // the parser limits nesting, but a very long chain like 1 + 1 + ... still
+    // builds an AST deep enough to overflow the compiler's recursion
+    if (e instanceof RangeError) {
+      throw new CompileError([{ message: 'Program is too deeply nested to compile', line: 1, col: 0 }]);
+    }
+    throw e;
+  }
 }
 
 function sortDiagnostics(list: Diagnostic[]) {

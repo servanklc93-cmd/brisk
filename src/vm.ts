@@ -2,7 +2,7 @@ import { Op } from './chunk';
 import { Globals } from './globals';
 import { BUILTIN_METHODS, iterate } from './natives';
 import {
-  BoundMethod, BriskList, BriskMap, Closure, DONE, type FnProto, Instance, Iter, Klass,
+  BoundMethod, BriskList, BriskMap, Closure, DONE, type FnProto, FormatDepthError, Instance, Iter, Klass,
   NativeError, NativeFn, Range, Upvalue, type Value, format, isTruthy, typeName,
 } from './value';
 
@@ -611,7 +611,7 @@ export class VM {
       }
     } catch (e) {
       // natives throw NativeError; give it a line number and a stack trace
-      if (e instanceof NativeError) throw this.error(e.message, frame, ip);
+      if (e instanceof NativeError || e instanceof FormatDepthError) throw this.error(e.message, frame, ip);
       throw e;
     }
   }
