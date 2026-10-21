@@ -161,7 +161,7 @@ node dist/brisk.js -e 'print(sum(map(1..11, fn(x) { return x * x })))'
 ## Testing
 
 ```bash
-npm test          # 56 tests
+npm test          # 66 tests
 npm run typecheck
 npm run bench
 ```
@@ -174,6 +174,10 @@ npm run bench
   than a clean `CompileError` or `RuntimeError` fails the test. Writing the parser tests also
   turned up a real bug: unterminated input like `let x = (` made the parser recurse until the
   stack overflowed.
+- **Hostile inputs:** 10,000 nested parentheses, a 100,000-term expression, a list nested
+  100,000 deep. The first version crashed on all of these with a raw JS `RangeError`.
+  Now the parser stops at 200 levels of nesting (CPython has the same limit) and reports
+  the line, and printing a too-deep value is a normal runtime error.
 - Unit tests for the lexer, parser precedence, constant folding and error formatting.
 
 ## Language reference
@@ -216,6 +220,8 @@ bench/          brisk vs CPython benchmarks
   A C version would need a mark-sweep collector, which this design leaves room for.
 - No modules or imports, no exceptions you can catch, no tail call optimization.
 - Error positions are line-based; only lexer and parser errors know the column.
+- Limits: 200 levels of expression nesting, 256 locals and 65,535 constants per function,
+  65,535 globals, 1024 call frames.
 
 ## License
 
